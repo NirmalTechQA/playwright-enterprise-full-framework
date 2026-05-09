@@ -7,13 +7,13 @@ on:
 
   pull_request:
 
-  # Manual trigger
+  # Manual execution
   workflow_dispatch:
 
     inputs:
 
-      test_type:
-        description: 'Select test suite to execute'
+      execution_type:
+        description: 'Select execution type'
         required: true
         default: 'all'
 
@@ -21,7 +21,8 @@ on:
 
         options:
           - all
-          - ui
+          - ui-chromium
+          - ui-firefox
           - api
 
 env:
@@ -35,19 +36,13 @@ jobs:
 
     timeout-minutes: 60
 
-    strategy:
-      fail-fast: false
-
-      matrix:
-        browser: [chromium, firefox]
-
     steps:
 
       # Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v5
 
-      # Setup Node
+      # Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v5
 
@@ -63,76 +58,80 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      # -------------------------
-      # UI TESTS
-      # -------------------------
+      # -----------------------------------
+      # RUN ALL TESTS
+      # -----------------------------------
 
-      - name: Run UI Tests
+      - name: Run Complete Suite
         if: |
-          github.event.inputs.test_type == 'ui' ||
-          github.event.inputs.test_type == 'all' ||
-          github.event.inputs.test_type == ''
+          github.event.inputs.execution_type == 'all' ||
+          github.event.inputs.execution_type == ''
 
         continue-on-error: true
 
         run: |
-          npx playwright test tests/ui --project=${{ matrix.browser }}
+          npx playwright test
 
-      # Upload UI Report
-      - name: Upload UI Report
-        if: always()
+      # -----------------------------------
+      # UI TESTS - CHROMIUM
+      # -----------------------------------
 
-        uses: actions/upload-artifact@v4
+      - name: Run UI Tests - Chromium
+        if: github.event.inputs.execution_type == 'ui-chromium'
 
-        with:
-          name: playwright-ui-report-${{ matrix.browser }}
-          path: playwright-report/
-          if-no-files-found: ignore
+        continue-on-error: true
 
-      # Upload UI Traces
-      - name: Upload UI Test Results
-        if: always()
+        run: |
+          npx playwright test tests/ui --project=chromium
 
-        uses: actions/upload-artifact@v4
+      # -----------------------------------
+      # UI TESTS - FIREFOX
+      # -----------------------------------
 
-        with:
-          name: ui-test-results-${{ matrix.browser }}
-          path: test-results/
-          if-no-files-found: ignore
+      - name: Run UI Tests - Firefox
+        if: github.event.inputs.execution_type == 'ui-firefox'
 
-      # -------------------------
+        continue-on-error: true
+
+        run: |
+          npx playwright test tests/ui --project=firefox
+
+      # -----------------------------------
       # API TESTS
-      # -------------------------
+      # -----------------------------------
 
       - name: Run API Tests
-        if: |
-          github.event.inputs.test_type == 'api' ||
-          github.event.inputs.test_type == 'all' ||
-          github.event.inputs.test_type == ''
+        if: github.event.inputs.execution_type == 'api'
 
         continue-on-error: true
 
         run: |
           npx playwright test tests/api
 
-      # Upload API Report
-      - name: Upload API Report
+      # -----------------------------------
+      # UPLOAD PLAYWRIGHT REPORT
+      # -----------------------------------
+
+      - name: Upload Playwright Report
         if: always()
 
         uses: actions/upload-artifact@v4
 
         with:
-          name: playwright-api-report
+          name: playwright-report
           path: playwright-report/
           if-no-files-found: ignore
 
-      # Upload API Traces
-      - name: Upload API Test Results
+      # -----------------------------------
+      # UPLOAD TEST RESULTS
+      # -----------------------------------
+
+      - name: Upload Test Results
         if: always()
 
         uses: actions/upload-artifact@v4
 
         with:
-          name: api-test-results
+          name: test-results
           path: test-results/
           if-no-files-found: ignore
