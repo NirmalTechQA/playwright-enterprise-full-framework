@@ -1,65 +1,138 @@
 name: Playwright Enterprise Tests
 
 on:
+
+  # Automatic execution
   push:
 
   pull_request:
 
+  # Manual trigger
   workflow_dispatch:
+
+    inputs:
+
+      test_type:
+        description: 'Select test suite to execute'
+        required: true
+        default: 'all'
+
+        type: choice
+
+        options:
+          - all
+          - ui
+          - api
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
 
-  tests:
+  playwright-tests:
 
     runs-on: ubuntu-latest
 
     timeout-minutes: 60
 
+    strategy:
+      fail-fast: false
+
+      matrix:
+        browser: [chromium, firefox]
+
     steps:
 
+      # Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v5
 
+      # Setup Node
       - name: Setup Node.js
         uses: actions/setup-node@v5
+
         with:
           node-version: 22
-          cache: 'npm'
+          cache: npm
 
+      # Install Dependencies
       - name: Install Dependencies
         run: npm ci
 
+      # Install Playwright Browsers
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      # UI Tests
+      # -------------------------
+      # UI TESTS
+      # -------------------------
+
       - name: Run UI Tests
-        run: npx playwright test tests/ui
+        if: |
+          github.event.inputs.test_type == 'ui' ||
+          github.event.inputs.test_type == 'all' ||
+          github.event.inputs.test_type == ''
+
         continue-on-error: true
 
-      # API Tests should run regardless of UI status
-      - name: Run API Tests
-        if: always()
-        run: npx playwright test tests/api
-        continue-on-error: true
+        run: |
+          npx playwright test tests/ui --project=${{ matrix.browser }}
 
-      # Upload Reports
-      - name: Upload Playwright Report
+      # Upload UI Report
+      - name: Upload UI Report
         if: always()
+
         uses: actions/upload-artifact@v4
 
         with:
-          name: playwright-report
+          name: playwright-ui-report-${{ matrix.browser }}
           path: playwright-report/
+          if-no-files-found: ignore
 
-      # Upload Test Results
-      - name: Upload Test Results
+      # Upload UI Traces
+      - name: Upload UI Test Results
         if: always()
+
         uses: actions/upload-artifact@v4
 
         with:
-          name: test-results
+          name: ui-test-results-${{ matrix.browser }}
           path: test-results/
+          if-no-files-found: ignore
+
+      # -------------------------
+      # API TESTS
+      # -------------------------
+
+      - name: Run API Tests
+        if: |
+          github.event.inputs.test_type == 'api' ||
+          github.event.inputs.test_type == 'all' ||
+          github.event.inputs.test_type == ''
+
+        continue-on-error: true
+
+        run: |
+          npx playwright test tests/api
+
+      # Upload API Report
+      - name: Upload API Report
+        if: always()
+
+        uses: actions/upload-artifact@v4
+
+        with:
+          name: playwright-api-report
+          path: playwright-report/
+          if-no-files-found: ignore
+
+      # Upload API Traces
+      - name: Upload API Test Results
+        if: always()
+
+        uses: actions/upload-artifact@v4
+
+        with:
+          name: api-test-results
+          path: test-results/
+          if-no-files-found: ignore
