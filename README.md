@@ -24,8 +24,7 @@ Enterprise-grade Playwright + TypeScript framework supporting:
 7. [Team Onboarding Guide](#team-onboarding-guide)
 8. [Configuration](#configuration)
 9. [CI/CD Integration](#cicd-integration)
-10. [Contributing](#contributing)
-11. [Troubleshooting Guide](#troubleshooting-guide)
+10. [Troubleshooting Guide](#troubleshooting-guide)
 
 ---
 
