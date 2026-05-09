@@ -20,6 +20,9 @@ export default defineConfig({
   // while allowing faster parallel execution locally.
   workers: process.env.CI ? 2 : 4,
 
+  //For retries of local runs, we want to avoid retries to speed up feedback, while in CI we want to allow retries to improve stability.
+  retries: process.env.CI ? 2 : 0
+
   // Report test results in both HTML and list formats
   reporter: [['html'], ['list']],
 
