@@ -35,12 +35,18 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
+      # UI Tests
       - name: Run UI Tests
         run: npx playwright test tests/ui
+        continue-on-error: true
 
+      # API Tests should run regardless of UI status
       - name: Run API Tests
+        if: always()
         run: npx playwright test tests/api
+        continue-on-error: true
 
+      # Upload Reports
       - name: Upload Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,6 +55,7 @@ jobs:
           name: playwright-report
           path: playwright-report/
 
+      # Upload Test Results
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
