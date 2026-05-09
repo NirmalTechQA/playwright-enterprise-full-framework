@@ -1,0 +1,33 @@
+name: Playwright Enterprise Tests
+
+# Triggers for automated testing
+on:
+  # Run on push to any branch - All commits trigger tests
+  push:
+  
+  # Run on pull requests - All PR changes trigger tests
+  pull_request:
+  
+  # Manual trigger - Can run tests manually from GitHub UI
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+
+      - run: npx playwright install --with-deps
+
+      - name: Run UI Tests
+        run: npx playwright test tests/ui
+
+      - name: Run API Tests
+        run: npx playwright test tests/api
